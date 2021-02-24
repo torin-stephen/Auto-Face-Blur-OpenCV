@@ -1,7 +1,12 @@
+#!/usr/bin/env python
+
 import cv2
 import numpy as np
 from os.path import dirname, join
 import os
+import pdb
+import sys
+from progress.bar import ShadyBar
 
 # https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt
 prototxt_path = join(dirname(__file__), "deploy.prototxt")
@@ -11,22 +16,62 @@ model_path = join(dirname(__file__),
 # load Caffe model
 model = cv2.dnn.readNetFromCaffe(prototxt_path, model_path)
 
+if len(sys.argv) > 1:
+    input_video = sys.argv[1]
+else:
+    input_video = "input.mp4"
 
-vidcap = cv2.VideoCapture('input.mp4')
-success, image = vidcap.read()
-count = 0
-while success:
-    cv2.imwrite("./frames/original/frame%d.jpg" %
-                count, image)     # save frame as JPEG file
+if not os.path.exists(input_video):
+    print("{} does not exist".format(input_video))
+    sys.exit(2)
+
+output_video = "blurred.{}".format(input_video)
+
+original_dir="./frames/original"
+blurred_dir="./frames/blurred"
+
+if not os.path.exists("frames"):
+    os.mkdir("frames")
+
+for d in (original_dir, blurred_dir):
+    if not os.path.exists(d):
+        os.mkdir(d)
+
+def extract_stills(video, target_directory):
+    """Assume if there are any stills, we don't need to do this."""
+    count = 0
+    if len(os.listdir(target_directory)) > 0:
+        print("Files exist in {} : skipping still extraction from {}".format(target_directory, video))
+        return count
+    vidcap = cv2.VideoCapture(video)
     success, image = vidcap.read()
-    print('Read a new frame: ', success)
-    count += 1
+    while success:
+        # replace by original_dir
+        cv2.imwrite("./frames/original/frame%d.jpg" %
+                    count, image)     # save frame as JPEG file
+        success, image = vidcap.read()
+        #print('Read a new frame: ', success)
+        count += 1
+    return count
 
+count = extract_stills(input_video, original_dir)
+print("Extracted {} stills from {}".format(count, input_video))
 
 count = 0
-for filename in os.listdir("./frames/original/"):
-    image = cv2.imread("./frames/original/{filename}.jpg")
-    print(image)
+#pdb.set_trace()
+images = os.listdir(original_dir)
+n_frames = len(images)
+sample_image = cv2.imread(os.path.join(original_dir, images[0]))
+height, width = sample_image.shape[:2]
+codec = cv2.VideoWriter_fourcc('M', 'P', '4', '2')
+codec = cv2.VideoWriter_fourcc(*'MJPG')
+video = cv2.VideoWriter(output_video, codec, 20,  (width, height), True)
+bar = ShadyBar("Blurring", max = n_frames)
+
+for filename in os.listdir(original_dir):
+    full_path = os.path.join(original_dir, filename)
+    image = cv2.imread(full_path)
+    #    print(image)
     # get width and height of the image
     h, w = image.shape[:2]
     # gaussian blur kernel size depends on width and height of original image
@@ -54,5 +99,13 @@ for filename in os.listdir("./frames/original/"):
             face = cv2.GaussianBlur(face, (kernel_width, kernel_height), 0)
             # put the blurred face into the original image
             image[start_y: end_y, start_x: end_x] = face
-            cv2.imwrite('./frames/blurred/blurred-face%d.jpg' % count, image)
+            #blurred = os.path.join(blurred_dir, "blurred-face{}.jpg".format(count))
+            #cv2.imwrite(blurred, image)
+            video.write(image)
             count += 1
+            bar.next()
+
+#cv2.destroyAllWindows()
+video.release()
+bar.finish()
+print("New video is in {} with {} frames".format(output_video, count))
