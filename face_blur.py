@@ -7,6 +7,7 @@ import os
 import pdb
 import sys
 from progress.bar import ShadyBar
+import glob
 
 # https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt
 prototxt_path = join(dirname(__file__), "deploy.prototxt")
@@ -57,20 +58,28 @@ def extract_stills(video, target_directory):
 count = extract_stills(input_video, original_dir)
 print("Extracted {} stills from {}".format(count, input_video))
 
-count = 0
-#pdb.set_trace()
-images = os.listdir(original_dir)
-n_frames = len(images)
-sample_image = cv2.imread(os.path.join(original_dir, images[0]))
-height, width = sample_image.shape[:2]
-codec = cv2.VideoWriter_fourcc('M', 'P', '4', '2')
-codec = cv2.VideoWriter_fourcc(*'MJPG')
-video = cv2.VideoWriter(output_video, codec, 20,  (width, height), True)
+n_frames = count or 1080
+
+print(n_frames)
+
 bar = ShadyBar("Blurring", max = n_frames)
 
-for filename in os.listdir(original_dir):
-    full_path = os.path.join(original_dir, filename)
-    image = cv2.imread(full_path)
+
+
+count = 0
+#pdb.set_trace()
+
+#images = os.listdir(original_dir)
+
+
+
+images = []
+
+
+
+for filename in glob.glob('frames/original/*.jpg'):
+    #full_path = os.path.join(original_dir, filename)
+    image = cv2.imread(filename)
     #    print(image)
     # get width and height of the image
     h, w = image.shape[:2]
@@ -99,11 +108,20 @@ for filename in os.listdir(original_dir):
             face = cv2.GaussianBlur(face, (kernel_width, kernel_height), 0)
             # put the blurred face into the original image
             image[start_y: end_y, start_x: end_x] = face
-            #blurred = os.path.join(blurred_dir, "blurred-face{}.jpg".format(count))
-            #cv2.imwrite(blurred, image)
-            video.write(image)
+            # blurred = os.path.join(blurred_dir, "blurred-face{}.jpg".format(count))
+            # cv2.imwrite(blurred, image)
+            images.append(image)
             count += 1
             bar.next()
+
+sample_image = cv2.imread("frames/original/{images[0]}").format(images[0])
+height, width = sample_image.shape[:2]
+codec = cv2.VideoWriter_fourcc(*'MP4V')
+video = cv2.VideoWriter(output_video, codec, 20.0,  (width, height))#, True)
+
+for i in range(len(images)):
+    video.write(images[i])
+
 
 #cv2.destroyAllWindows()
 video.release()
