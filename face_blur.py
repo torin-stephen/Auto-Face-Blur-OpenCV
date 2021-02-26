@@ -63,7 +63,7 @@ class VideoTransformer():
     def blur_movie(self):
         sample_image = cv2.imread(os.path.join(self.original_dir, "frame0.jpg"))
         height, width = sample_image.shape[:2]
-        video = cv2.VideoWriter(self.output_video, self.codec, 20.0,  (width, height))#, True)
+        video = cv2.VideoWriter(self.output_video, self.codec, 15,  (width, height))#, True)
 
         for frame_id in range(0, self.n_frames):
             filename = os.path.join(self.original_dir, "frame%d.jpg" % frame_id)
