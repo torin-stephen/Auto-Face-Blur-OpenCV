@@ -52,11 +52,11 @@ class VideoTransformer():
         if existing > 0:
             print("Files exist in {} : skipping still extraction from {}".format(self.original_dir, self.input_video))
             return existing
-        vidcap = cv2.VideoCapture(video)
+        vidcap = cv2.VideoCapture(self.input_video)
         success, image = vidcap.read()
         count = 0
         while success:
-            cv2.imwrite(os.path.join(original_dir, "frame%d.jpg" % count, image))
+            cv2.imwrite(os.path.join(self.original_dir, "frame%d.jpg" % count, image))
             count += 1
         return count
 
