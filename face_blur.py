@@ -52,18 +52,18 @@ class VideoTransformer():
         if existing > 0:
             print("Files exist in {} : skipping still extraction from {}".format(self.original_dir, self.input_video))
             return existing
-        vidcap = cv2.VideoCapture(video)
+        vidcap = cv2.VideoCapture(self.input_video)
         success, image = vidcap.read()
         count = 0
         while success:
-            cv2.imwrite(os.path.join(original_dir, "frame%d.jpg" % count, image))
+            cv2.imwrite(os.path.join(self.original_dir, "frame%d.jpg" % count, image))
             count += 1
         return count
 
     def blur_movie(self):
         sample_image = cv2.imread(os.path.join(self.original_dir, "frame0.jpg"))
         height, width = sample_image.shape[:2]
-        video = cv2.VideoWriter(self.output_video, self.codec, 20.0,  (width, height))#, True)
+        video = cv2.VideoWriter(self.output_video, self.codec, 20.0,  (width, height))
 
         for frame_id in range(0, self.n_frames):
             filename = os.path.join(self.original_dir, "frame%d.jpg" % frame_id)
