@@ -69,9 +69,12 @@ class VideoTransformer():
         count = 0
         success = True
         while success:
-            success,image = vidcap.read()
-            cv2.imwrite(os.path.join(self.original_dir, "frame%d.jpg" % count), image)
-            count += 1
+            try:
+                success,image = vidcap.read()
+                cv2.imwrite(os.path.join(self.original_dir, "frame%d.jpg" % count), image)
+                count += 1
+            except Exception:
+                pass
         return count
 
 
