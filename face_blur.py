@@ -26,7 +26,7 @@ class VideoTransformer():
         self.prepare_frames()
         self.n_frames = self.extract_stills()
         self.blur_bar = ShadyBar("Blurring", max=self.n_frames)
-        self.codec = cv2.VideoWriter_fourcc(*'MP4V')
+        self.codec = cv2.VideoWriter_fourcc(*'mp4v')
         self.blur_movie(confidence_threshold)
         self.blur_bar.finish()
         print("New video is in {} with {} frames".format(
@@ -67,11 +67,15 @@ class VideoTransformer():
 
 
     def blur_movie(self, confidence_threshold):
+        
+        # For the FPS
+        vidcap = cv2.VideoCapture(self.input_video)
+        
         sample_image = cv2.imread(os.path.join(
             self.original_dir, "frame0.jpg"))
         height, width = sample_image.shape[:2]
         video = cv2.VideoWriter(
-            self.output_video, self.codec, 15,  (width, height))  # , True)
+            self.output_video, self.codec, vidcap.get(cv2.CAP_PROP_FPS),  (width, height))  # , True)
 
         for frame_id in range(0, self.n_frames):
             filename = os.path.join(
