@@ -18,6 +18,8 @@ model = cv2.dnn.readNetFromCaffe(prototxt_path, model_path)
 
 _DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
+logging.basicConfig(level=logging.DEBUG)
+
 _LOGGER = logging.getLogger(__name__)
 
 _LOGGER.info("Model loaded")
