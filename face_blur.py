@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 import cv2
@@ -9,50 +8,57 @@ import pdb
 import sys
 from progress.bar import ShadyBar
 import ffmpeg
+import argparse
+import logging
 
 prototxt_path = join(dirname(__file__), "deploy.prototxt")
 model_path = join(dirname(__file__),
                   "res10_300x300_ssd_iter_140000_fp16.caffemodel")
 model = cv2.dnn.readNetFromCaffe(prototxt_path, model_path)
 
+_DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+_LOGGER = logging.getLogger(__name__)
+
+_LOGGER.info("Model loaded")
+
+from art import ascii_dog
 
 class VideoTransformer():
 
-    def __init__(self, original_dir, blurred_dir, confidence_threshold, input_video):
+    def __init__(self, original_dir, args):
         self.original_dir = original_dir
-        self.blurred_dir = blurred_dir
-        self.confidence_threshold = confidence_threshold
-        self.input_video = input_video
+        self.confidence_threshold = args.confidence
+        self.input_video = args.input
+        self.output_video = "blurred.{}".format(self.input_video)
         self.prepare_frames()
         self.n_frames = self.extract_stills()
         self.blur_bar = ShadyBar("Blurring", max=self.n_frames)
         self.codec = cv2.VideoWriter_fourcc(*'mp4v')
-        self.blur_movie(confidence_threshold)
+        self.blur_movie(self.confidence_threshold)
         self.blur_bar.finish()
         self.addAudio()
-        print("New base-video is in {} with {} frames".format(
+        _LOGGER.info("New base-video is in {} with {} frames".format(
             self.output_video, self.n_frames))
 
     def prepare_frames(self):
         if not os.path.exists(self.input_video):
-            print("{} does not exist".format(self.input_video))
+            _LOGGER.info("{} does not exist".format(self.input_video))
             sys.exit(2)
-
-        self.output_video = "blurred.{}".format(self.input_video)
 
         if not os.path.exists("frames"):
             os.mkdir("frames")
 
-        for d in (self.original_dir, self.blurred_dir):
+        for d in (self.original_dir):
             if not os.path.exists(d):
                 os.mkdir(d)
 
     def extract_stills(self):
         """Assume if there are any stills, we don't need to do this."""
-        print("Extracting stills...")
+        _LOGGER.info("Extracting stills...")
         existing = len(os.listdir(self.original_dir))
         if existing > 0:
-            print("Files exist in {} : skipping still extraction from {}".format(
+            _LOGGER.info("Files exist in {} : skipping still extraction from {}".format(
                 self.original_dir, self.input_video))
             return existing
         vidcap = cv2.VideoCapture(self.input_video)
@@ -115,31 +121,55 @@ class VideoTransformer():
         audio = stream_input.audio
         video = stream_output.video
         out = ffmpeg.output(audio, video, 'blurred_with_audio.mp4')
-        print("Adding audio...")
+        _LOGGER.info("Adding audio...")
         ffmpeg.run(out, capture_stdout=False, capture_stderr=True, overwrite_output=True)
-        print("New audio-video is in blurred_with_audio.mp4")
+        _LOGGER.info("New audio-video is in blurred_with_audio.mp4")
 
     def __repr__(self):
-        return "A nicer little Elf!"
+        r = []
+        r.append("VideoEncoder class brought you via")
+        r.append("A nicer little Elf!")
+        r.append("With help from Torin Stephen, Trixie Twizzle and Sun An Tian")
+        r.append(ascii_dog)
+        return '\n'.join(r)
+        
 
 
 def main():
-    original_dir = "./frames/original"
-    blurred_dir = "./frames/blurred"
-    if len(sys.argv) > 1:
-        confidence_threshold = float(sys.argv[1])
-    else:
-        confidence_threshold = 0.4
-    if len(sys.argv) > 2:
-        input_video = sys.argv[2]
-    else:
-        input_video = "input.mp4"
+    p = argparse.ArgumentParser(description='Torin Auto Blur Face tool')
 
+    #p.add_argument('-i', '--input', dest='inputt', help='Video to process.', default='input.mp4')
+    p.add_argument('-i', '--input',  help='Video to process.', default='input.mp4')
+    p.add_argument('-o', '--output',  help='Video result.', default='output.mp4')
+    p.add_argument('-c', '--confidence',  type=float, help='Confidence threshold to blur pixels 0.0 - 1.0', default=0.4)
+    p.add_argument('-n', '--no-audio',  action='store_true', help='Exclude audio track')
+    p.add_argument('-C', '--codec',  type=str, choices=['mpv4','trixie'], help='CODEC choice', default='mpv4')
+    p.add_argument('-f', '--frames',  type=str,  help='Number of frames to encode', default=200)
     
+#    p.add_argument('-u', '--user', type=str, metavar='USER', help='Github username.', required=True)
+#    p.add_argument('-v', '--version', type=parse_version, metavar='VERSION', help='Use given version for the release. If version contains only `+\' signs then it will increase latest version number: one `+\' increases major version number (e.g. 1.2.3 -> 2.0), `++\' increases minor version number (e.g. 1.2.3 -> 1.3), `+++\' increases patch level (e.g. 1.2.3 -> 1.2.4). Defaults to `+++\'.', default='+++')
+#    p.add_argument('-r', '--rev', metavar='COMMIT', help='Use given revision for the release. Defaults to `develop\'.', default='develop')
+#    p.add_argument('-s', '--stages', action='append', metavar='STAGE', help='Only run one of the given stages (default to all).', choices=tuple((stname for stname, stfunc in stages)))
+#    p.add_argument('-p', '--password', type=str, metavar='PASS', help='Github password. You will be prompted if it is not supplied.')
+#    p.add_argument('-o', '--overlay', type=str, metavar='PATH', help='Location of the local clone of the {0} overlay. If provided directory does not exist it will be created by “git clone”. Defaults to /tmp/powerline-{0}.'.format(OVERLAY_NAME), default='/tmp/powerline-' + OVERLAY_NAME)
+#
+    args = p.parse_args()
+
+    if args.confidence > 1.0:
+        args.confidence = 1.0
+    elif args.confidence < 0.0:
+        args.confidence = 0.0
+
+    confidence_threshold = args.confidence
+
+    original_dir = "./frames/original"
+    input_video = args.input
+    _LOGGER.info("input video is {}".format(input_video))
+    _LOGGER.info("{}".format(args))
+            
     
-    vxform = VideoTransformer(
-        original_dir, blurred_dir, confidence_threshold, input_video)
-    print(vxform)
+    vxform = VideoTransformer( original_dir, args)
+    _LOGGER.info(vxform)
 
 
 if __name__ == '__main__':
