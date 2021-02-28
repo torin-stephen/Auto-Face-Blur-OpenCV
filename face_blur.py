@@ -8,7 +8,7 @@ import os
 import pdb
 import sys
 from progress.bar import ShadyBar
-import glob
+import ffmpeg
 
 prototxt_path = join(dirname(__file__), "deploy.prototxt")
 model_path = join(dirname(__file__),
@@ -29,7 +29,8 @@ class VideoTransformer():
         self.codec = cv2.VideoWriter_fourcc(*'mp4v')
         self.blur_movie(confidence_threshold)
         self.blur_bar.finish()
-        print("New video is in {} with {} frames".format(
+        self.addAudio()
+        print("New base-video is in {} with {} frames".format(
             self.output_video, self.n_frames))
 
     def prepare_frames(self):
@@ -108,6 +109,16 @@ class VideoTransformer():
             self.blur_bar.next()
         video.release()
 
+    def addAudio(self):
+        stream_input = ffmpeg.input(self.input_video)
+        stream_output = ffmpeg.input(self.output_video)
+        audio = stream_input.audio
+        video = stream_output.video
+        out = ffmpeg.output(audio, video, 'blurred_with_audio.mp4')
+        print("Adding audio...")
+        ffmpeg.run(out, capture_stdout=False, capture_stderr=True, overwrite_output=True)
+        print("New audio-video is in blurred_with_audio.mp4")
+
     def __repr__(self):
         return "A nicer little Elf!"
 
@@ -124,6 +135,8 @@ def main():
     else:
         input_video = "input.mp4"
 
+    
+    
     vxform = VideoTransformer(
         original_dir, blurred_dir, confidence_threshold, input_video)
     print(vxform)
