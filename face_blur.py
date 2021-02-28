@@ -50,11 +50,11 @@ class VideoTransformer():
 
         if not os.path.exists("frames"):
             os.mkdir("frames")
+        
+        if not os.path.exists("frames/original"):
+            os.mkdir("frames/original")
 
-        for d in (self.original_dir):
-            if not os.path.exists(d):
-                os.mkdir(d)
-
+    
     def extract_stills(self):
         """Assume if there are any stills, we don't need to do this."""
         _LOGGER.info("Extracting stills...")
