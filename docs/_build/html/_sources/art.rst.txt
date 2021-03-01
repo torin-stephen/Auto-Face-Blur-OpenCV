@@ -1,0 +1,7 @@
+art module
+==========
+
+.. automodule:: art
+   :members:
+   :undoc-members:
+   :show-inheritance:

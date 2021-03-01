@@ -27,8 +27,10 @@ _LOGGER.info("Model loaded")
 from art import ascii_dog
 
 class VideoTransformer():
-
+    """The main class for the video transforming."""
     def __init__(self, original_dir, args):
+        """ inits VideoTransformer with original directory and CLI arguments.
+        """
         self.original_dir = original_dir
         self.confidence_threshold = args.confidence
         self.input_video = args.input
@@ -44,6 +46,7 @@ class VideoTransformer():
             self.output_video, self.n_frames))
 
     def prepare_frames(self):
+        """Checks if there is a directory for the frames to exist, and if there is an input video."""
         if not os.path.exists(self.input_video):
             _LOGGER.info("{} does not exist".format(self.input_video))
             sys.exit(2)
@@ -56,7 +59,7 @@ class VideoTransformer():
 
     
     def extract_stills(self):
-        """Assume if there are any stills, we don't need to do this."""
+        """Extracts the frames from the input video, if there are no frames in the folder."""
         _LOGGER.info("Extracting stills...")
         existing = len(os.listdir(self.original_dir))
         if existing > 0:
@@ -79,7 +82,10 @@ class VideoTransformer():
 
 
     def blur_movie(self, confidence_threshold):
+        """Applies the AI blur to the face, outputs the blurred frame, and adds it to the movie.
         
+        param: **confidence_threshold**: How confident the AI has to be, before blurring the face.
+        """
         # For the FPS
         vidcap = cv2.VideoCapture(self.input_video)
         
@@ -113,7 +119,7 @@ class VideoTransformer():
                     face = image[start_y: end_y, start_x: end_x]
                     # apply gaussian blur to this face
                     face = cv2.GaussianBlur(
-                        face, (kernel_width, kernel_height), 0)
+                        face, (kernel_width, kernel_height), 1)
                     # put the blurred face into the original image
                     image[start_y: end_y, start_x: end_x] = face
             video.write(image)
@@ -121,6 +127,7 @@ class VideoTransformer():
         video.release()
 
     def addAudio(self):
+        """Function to add Audio to the main output video, taken from original input video."""
         stream_input = ffmpeg.input(self.input_video)
         stream_output = ffmpeg.input(self.output_video)
         audio = stream_input.audio
@@ -131,6 +138,7 @@ class VideoTransformer():
         _LOGGER.info("New audio-video is in blurred_with_audio.mp4")
 
     def __repr__(self):
+        """Final output messages."""
         r = []
         r.append("VideoEncoder class brought you via")
         r.append("A nicer little Elf!")

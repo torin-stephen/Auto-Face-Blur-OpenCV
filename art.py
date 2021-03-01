@@ -1,4 +1,4 @@
-
+"""Ascii dog the print at the end of the program."""
 ascii_dog=r"""
   ___
  __/_  `.  .-\"\"\"-.
