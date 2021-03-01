@@ -119,7 +119,7 @@ class VideoTransformer():
                     face = image[start_y: end_y, start_x: end_x]
                     # apply gaussian blur to this face
                     face = cv2.GaussianBlur(
-                        face, (kernel_width, kernel_height), 1)
+                        face, (kernel_width, kernel_height), 0)
                     # put the blurred face into the original image
                     image[start_y: end_y, start_x: end_x] = face
             video.write(image)
